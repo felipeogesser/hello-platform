@@ -28,7 +28,9 @@ COPY app ./app
 FROM python:3.13-slim AS runtime
 
 # Run as an unprivileged user: if the app is compromised, the attacker is not root.
-RUN useradd --create-home --uid 10001 appuser
+RUN python -m pip uninstall -y pip \
+    && rm -rf /usr/local/lib/python3.13/ensurepip \
+    && useradd --create-home --uid 10001 appuser
 
 WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
