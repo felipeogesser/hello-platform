@@ -1,0 +1,41 @@
+[project]
+name = "hello-platform"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "felipeogesser", email = "felipeogesser@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.162.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+hello-platform = "hello_platform:main"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E/W: style, F: real bugs, I: import order, B: bug patterns,
+# UP: modern syntax, S: security checks
+select = ["E", "W", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]   # pytest uses assert, so this security rule is off in tests
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

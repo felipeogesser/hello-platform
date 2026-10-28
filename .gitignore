@@ -1,0 +1,8 @@
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+*.pem
+*.key
