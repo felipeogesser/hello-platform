@@ -8,7 +8,7 @@ app = FastAPI(title="hello-platform", version="0.1.0")
 @app.get("/")
 def hello() -> dict[str, str]:
     """Main endpoint: proves the app is running."""
-    return {"message": "Hello, world"}
+    return {"message": "Pipeline testing. testing main branch protection"}
 
 
 @app.get("/health")
