@@ -1,18 +1,13 @@
 name: CI
 
-# When the pipeline runs: on every pull request, and on every push to main
-# (a push to main only happens through a merged pull request, once the ruleset is on).
 on:
   pull_request:
   push:
     branches: [main]
 
-# Least privilege: by default the workflow can only read the code.
-# Jobs that need more ask for it explicitly.
 permissions:
   contents: read
 
-# If you push twice to the same PR, cancel the older, now-useless run.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,7 +16,6 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
-  # ---------- Job 1: same checks you run locally ----------
   quality:
     name: Lint and test
     runs-on: ubuntu-latest
@@ -30,7 +24,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
         with:
-          enable-cache: true          # reuse downloaded packages between runs
+          enable-cache: true
 
       - name: Install dependencies (exactly as locked)
         run: uv sync --locked
@@ -44,20 +38,57 @@ jobs:
       - name: Tests
         run: uv run pytest
 
-  # ---------- Job 2: build the image (and publish it only from main) ----------
   image:
     name: Build image
-    needs: quality                    # never build an image from code that fails tests
+    needs: quality
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write                 # needed to push to GitHub Container Registry
+      packages: write
+      security-events: write
     steps:
       - uses: actions/checkout@v7
-
-      # QEMU lets this x86 runner build the ARM image for the Oracle server.
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: hello-platform:scan
+          cache-from: type=gha
+
+      - name: Scan image (report to Security tab)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: hello-platform:scan
+          version: v0.76.1
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          exit-code: "0"
+
+      - name: Upload scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-image
+
+      - name: Fail on fixable HIGH/CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: hello-platform:scan
+          version: v0.76.1
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-setup-trivy: true
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
@@ -65,10 +96,8 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}   # temporary token GitHub creates per run
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Tags: sha-<commit> on every build (traceable, never overwritten),
-      # plus "latest" on main.
       - name: Image tags
         id: meta
         uses: docker/metadata-action@v6
