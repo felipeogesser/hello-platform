@@ -1,0 +1,37 @@
+# Checks that run on your machine before every commit (installed with: pre-commit install).
+# Each hook repo is pinned to a full commit SHA, like the GitHub Actions:
+# hooks are third-party code that runs on your machine.
+# To update: pre-commit autoupdate --freeze
+repos:
+  # Generic hygiene checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files    # blocks files over 500 KB by default
+      - id: check-merge-conflict       # leftover <<<<<<< markers
+      - id: detect-private-key         # -----BEGIN ... PRIVATE KEY-----
+
+  # Secret scanning: API keys, tokens, passwords (hundreds of known formats)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # Same lint and format rules as CI, but fixed before you commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 25bcf95026b96e2dd3c0aec3090c3d6ef6ca2e6c  # frozen: v0.17.3
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Fails if pyproject.toml changed but uv.lock wasn't updated
+  # (the same mismatch that makes "uv sync --locked" fail in CI)
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 46787482b9fb2003c56e0f7592e312ef381829d9  # frozen: 0.13.6
+    hooks:
+      - id: uv-lock
