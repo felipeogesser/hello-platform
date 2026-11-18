@@ -2,7 +2,7 @@
 
 # ---------- Stage 1: builder ----------
 # Has the build tools (uv). Installs dependencies into /app/.venv.
-FROM python:3.13-slim AS builder
+FROM python:3.15-slim AS builder
 
 # Copy the uv binary from its official image instead of installing it with pip.
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /bin/uv
@@ -25,7 +25,7 @@ COPY app ./app
 
 # ---------- Stage 2: runtime ----------
 # Starts from a clean image: no uv, no build cache, no dev dependencies.
-FROM python:3.13-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 # Run as an unprivileged user: if the app is compromised, the attacker is not root.
 RUN python -m pip uninstall -y pip \
